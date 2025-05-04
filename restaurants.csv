@@ -1,9 +1,7 @@
 Name,Cuisine,Rating,Price
 Nini Hachi,Sushi,4.7,2
 Mama Pasta,Italian,4.1,2
-Pad Thai Max,Thai,4.5,3
 Falafel King,Middle Eastern,4.2,1
-Archie,Burger Pub,4.0,3
-Nassi,Burger Pub,3.0,2
-Mc'd's,Burger chain,2.0,1
-Burgerim,burgers,3.0,1
+Archie,Pub,4.0,2
+Mai Way,Sushi,4.0,3
+Mcdona,Burger,2.5,2

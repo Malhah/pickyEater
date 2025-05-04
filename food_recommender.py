@@ -4,6 +4,21 @@ from sklearn.preprocessing import OneHotEncoder
 import os
 from datetime import datetime
 
+#  Normalize cuisines
+def normalize_cuisine(cuisine):
+    cuisine = cuisine.lower()
+    if "burger" in cuisine:
+        return "Burger"
+    if "sushi" in cuisine:
+        return "Sushi"
+    if "italian" in cuisine or "pizza" in cuisine:
+        return "Italian"
+    if "thai" in cuisine:
+        return "Thai"
+    if "kebab" in cuisine:
+        return "Middle Eastern"
+    return cuisine.title()
+
 class FoodRecommender:
     def __init__(self):
         self.model = LogisticRegression()
@@ -11,6 +26,7 @@ class FoodRecommender:
         self.trained = False
 
     def fit(self, user_data: pd.DataFrame):
+        user_data["Cuisine"] = user_data["Cuisine"].apply(normalize_cuisine)
         user_data = user_data[["Cuisine", "Rating", "Price", "Liked"]]
         encoded = self.encoder.fit_transform(user_data[["Cuisine"]]).toarray()
         encoded_df = pd.DataFrame(encoded, columns=self.encoder.get_feature_names_out())
@@ -20,6 +36,7 @@ class FoodRecommender:
         self.trained = True
 
     def predict(self, new_places: pd.DataFrame):
+        new_places["Cuisine"] = new_places["Cuisine"].apply(normalize_cuisine)
         if not self.trained:
             raise ValueError("Model has not been trained yet.")
         encoded = self.encoder.transform(new_places[["Cuisine"]]).toarray()
@@ -32,7 +49,7 @@ class FoodRecommender:
         return new_places.sort_values("Confidence", ascending=False)
 
 def add_restaurant_interactively(file="restaurants.csv"):
-    print("\n➕ Add a new restaurant:")
+    print("\n Add a new restaurant:")
     name = input("Restaurant Name: ")
     cuisine = input("Cuisine Type: ")
     rating = float(input("Rating (0-5): "))
@@ -40,7 +57,7 @@ def add_restaurant_interactively(file="restaurants.csv"):
 
     new_entry = pd.DataFrame([{
         "Name": name,
-        "Cuisine": cuisine,
+        "Cuisine": normalize_cuisine(cuisine),
         "Rating": rating,
         "Price": price
     }])
@@ -92,7 +109,7 @@ def clear_restaurants(file="restaurants.csv"):
     confirm = input(" Are you sure you want to clear all restaurants? (y/n): ").strip().lower()
     if confirm == 'y':
         open(file, 'w').close()
-        print("🧹 Restaurant list cleared.")
+        print(" Restaurant list cleared.")
     else:
         print("Action canceled.")
 
@@ -129,11 +146,11 @@ def rate_restaurant(restaurants_file="restaurants.csv", history_file="user_data.
                 rating = float(input("Google/estimated rating (0-5): "))
                 price = int(input("Price level (1 = cheap to 4 = expensive): "))
             except ValueError:
-                print("❌ Invalid input for rating or price.")
+                print(" Invalid input for rating or price.")
                 return
             selected = {
                 "Name": name,
-                "Cuisine": cuisine,
+                "Cuisine": normalize_cuisine(cuisine),
                 "Rating": rating,
                 "Price": price
             }
@@ -157,7 +174,7 @@ def rate_restaurant(restaurants_file="restaurants.csv", history_file="user_data.
 
     entry = {
         "Name": selected["Name"],
-        "Cuisine": selected["Cuisine"],
+        "Cuisine": normalize_cuisine(selected["Cuisine"]),
         "Rating": selected["Rating"],
         "Price": selected["Price"],
         "Liked": liked,
@@ -188,13 +205,11 @@ def run_recommender():
     recommendations = recommender.predict(new_places)
     recommendations.to_csv("recommendations.csv", index=False)
 
-    # Get top recommended restaurant
     top_restaurant = recommendations.iloc[0]
-    cuisine = top_restaurant["Cuisine"]
+    cuisine = normalize_cuisine(top_restaurant["Cuisine"])
 
-    # Find matching high-rated dishes (score 8+)
     matching_dishes = user_data[
-        (user_data["Cuisine"].str.lower() == cuisine.lower()) &
+        (user_data["Cuisine"].apply(normalize_cuisine) == cuisine) &
         (user_data["PersonalRating"] >= 8)
     ].sort_values("PersonalRating", ascending=False).head(3)
 

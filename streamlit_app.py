@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -6,7 +5,20 @@ from sklearn.preprocessing import OneHotEncoder
 import os
 from datetime import datetime
 
-# ------------------ MODEL ------------------
+def normalize_cuisine(cuisine):
+    cuisine = cuisine.lower()
+    if "burger" in cuisine:
+        return "Burger"
+    if "sushi" in cuisine:
+        return "Sushi"
+    if "italian" in cuisine or "pizza" in cuisine:
+        return "Italian"
+    if "thai" in cuisine:
+        return "Thai"
+    if "kebab" in cuisine:
+        return "Middle Eastern"
+    return cuisine.title()
+
 class FoodRecommender:
     def __init__(self):
         self.model = LogisticRegression()
@@ -14,6 +26,8 @@ class FoodRecommender:
         self.trained = False
 
     def fit(self, user_data: pd.DataFrame):
+        user_data = user_data.copy()
+        user_data["Cuisine"] = user_data["Cuisine"].apply(normalize_cuisine)
         user_data = user_data[["Cuisine", "Rating", "Price", "Liked"]]
         encoded = self.encoder.fit_transform(user_data[["Cuisine"]]).toarray()
         encoded_df = pd.DataFrame(encoded, columns=self.encoder.get_feature_names_out())
@@ -23,27 +37,24 @@ class FoodRecommender:
         self.trained = True
 
     def predict(self, new_places: pd.DataFrame):
+        new_places = new_places.copy()
+        new_places["Cuisine"] = new_places["Cuisine"].apply(normalize_cuisine)
         if not self.trained:
             raise ValueError("Model has not been trained yet.")
         encoded = self.encoder.transform(new_places[["Cuisine"]]).toarray()
         encoded_df = pd.DataFrame(encoded, columns=self.encoder.get_feature_names_out())
         X_new = pd.concat([encoded_df.reset_index(drop=True), new_places[["Rating", "Price"]].reset_index(drop=True)], axis=1)
-
-        new_places = new_places.copy()
         new_places["Predicted_Like"] = self.model.predict(X_new)
         new_places["Confidence"] = self.model.predict_proba(X_new)[:, 1]
         return new_places.sort_values("Confidence", ascending=False)
 
-# ------------------ APP ------------------
-st.title("🍽️ Food Recommender")
+st.title("Food Recommender")
 
-# Load or create datasets
 if not os.path.exists("user_data.csv"):
-    st.warning("No history found. Please rate at least one dish.")
+    st.warning("No user history found.")
 if not os.path.exists("restaurants.csv"):
-    st.warning("No restaurants available. Please add some first.")
+    st.warning("No restaurants found.")
 
-# Load data
 if os.path.exists("restaurants.csv"):
     restaurants_df = pd.read_csv("restaurants.csv")
 else:
@@ -54,8 +65,7 @@ if os.path.exists("user_data.csv"):
 else:
     user_data_df = pd.DataFrame(columns=["Name", "Cuisine", "Rating", "Price", "Liked", "DateVisited", "Dish", "PersonalRating"])
 
-# Tabs
-tab1, tab2, tab3 = st.tabs(["➕ Add Restaurant", "⭐ Rate a Dish", "🤖 Get Recommendation"])
+tab1, tab2, tab3 = st.tabs(["Add Restaurant", "Rate Dish", "Get Recommendation"])
 
 # Tab 1: Add restaurant
 with tab1:
@@ -69,7 +79,7 @@ with tab1:
         if submitted:
             new_row = pd.DataFrame([{
                 "Name": name,
-                "Cuisine": cuisine,
+                "Cuisine": normalize_cuisine(cuisine),
                 "Rating": rating,
                 "Price": price
             }])
@@ -92,7 +102,7 @@ with tab2:
             if submit_rating:
                 new_entry = {
                     "Name": selected_row["Name"],
-                    "Cuisine": selected_row["Cuisine"],
+                    "Cuisine": normalize_cuisine(selected_row["Cuisine"]),
                     "Rating": selected_row["Rating"],
                     "Price": selected_row["Price"],
                     "Liked": liked,
@@ -104,7 +114,7 @@ with tab2:
                 user_data_df.to_csv("user_data.csv", index=False)
                 st.success("Rating saved!")
 
-# Tab 3: Recommendation
+# Tab 3: Get recommendation
 with tab3:
     st.header("Your Personalized Recommendation")
     if len(user_data_df) >= 3 and len(restaurants_df) >= 1:
@@ -112,16 +122,17 @@ with tab3:
         model.fit(user_data_df)
         result = model.predict(restaurants_df)
         top_restaurant = result.iloc[0]
-        cuisine = top_restaurant["Cuisine"]
+        cuisine = normalize_cuisine(top_restaurant["Cuisine"])
+
         dishes = user_data_df[
-            (user_data_df["Cuisine"].str.lower() == cuisine.lower()) &
+            (user_data_df["Cuisine"].apply(normalize_cuisine) == cuisine) &
             (user_data_df["PersonalRating"] >= 8)
         ].sort_values("PersonalRating", ascending=False).head(3)
 
-        st.subheader("🔹 Where to eat:")
+        st.subheader("Where to eat:")
         st.markdown(f"**{top_restaurant['Name']}** ({cuisine}) – Confidence: **{top_restaurant['Confidence']:.2f}**")
 
-        st.subheader("🔹 What to eat:")
+        st.subheader("What to eat:")
         if not dishes.empty:
             for _, row in dishes.iterrows():
                 st.markdown(f"• **{row['Dish']}** (Rated {row['PersonalRating']}/10)")

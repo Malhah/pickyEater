@@ -1,9 +1,7 @@
 Name,Cuisine,Rating,Price,Predicted_Like,Confidence
-Pad Thai Max,Thai,4.5,3,1,0.8966171713193098
-Archie,Burger Pub,4.0,3,1,0.8791847868079227
-Nini Hachi,Sushi,4.7,2,1,0.8333703945302436
-Nassi,Burger Pub,3.0,2,1,0.7033904067896306
-Falafel King,Middle Eastern,4.2,1,1,0.6963307781410977
-Mama Pasta,Italian,4.1,2,1,0.6709588793439122
-Burgerim,burgers,3.0,1,1,0.6029580497416197
-Mc'd's,Burger chain,2.0,1,0,0.32588687763541
+Mai Way,Sushi,4.0,3,1,0.933871919048844
+Archie,Pub,4.0,2,1,0.8720596031295705
+Nini Hachi,Sushi,4.7,2,1,0.8200189196465347
+Mcdona,Burger,2.5,2,1,0.7795480798850185
+Mama Pasta,Italian,4.1,2,1,0.7159320842224425
+Falafel King,Middle Eastern,4.2,1,1,0.5806716807925911
