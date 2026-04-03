@@ -75,7 +75,4 @@ You rate dishes you've eaten, and the app learns your preferences to recommend w
 
 ---
 
-## 👨‍💻 Author
 
-Built by Yuval Asor — student, analyst, and engineer in training.
-Pull requests and ideas are welcome!
